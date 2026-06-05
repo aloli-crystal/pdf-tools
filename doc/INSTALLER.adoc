@@ -1,0 +1,364 @@
+= Stratégie d'installation des outils PDF ALOLI
+:toc: left
+:toclevels: 3
+:sectnums:
+:icons: font
+:date: 2026-05-10
+
+[abstract]
+Document de référence pour décider comment empaqueter et
+distribuer les outils PDF construits dans l'écosystème
+`aloli-crystal/*` (`pdf`, `crystal-combine-pdf`, `pdf-signature`,
+`watermark`, `prism`, etc.). Capture les options techniques
+identifiées le 2026-05-10, leurs trade-offs, et la trajectoire
+recommandée pour ALOLI.
+
+NOTE: La discussion qui a mené à ce document a démarré sur la
+question : **« que faudrait-il pour embarquer dans un installateur
+les outils que nous avons construits pour les PDFs ? »**. Ce
+document liste 5 voies, 3 phases recommandées, et 5 questions à
+arbitrer avant de coder.
+
+== Préalable : pour qui ?
+
+Quatre profils d'utilisateurs très différents, avec des besoins
+qui se ressemblent peu :
+
+[cols="1,2,2",options="header"]
+|===
+| Profil | Besoin | Outil approprié
+
+| **Développeur Crystal** qui veut intégrer `pdf` ou `pdf-signature`
+  dans son shard
+| `dependencies:` dans un `shard.yml`
+| Rien à installer côté utilisateur — c'est du Git natif, déjà en
+  place.
+
+| **Sysadmin / DPO** qui veut juste `crystal-combine-pdf` ou
+  `watermark` en CLI
+| Un binaire dans `/usr/local/bin`, sans toucher à Crystal
+| Homebrew tap, FreeBSD pkg, apt repo, ou script `curl ↦ sh`.
+
+| **Utilisateur final** non-tech qui veut signer / chiffrer /
+  assembler des PDFs
+| Une app `.app` (macOS) ou un site web
+| `prism` natif macOS + futur `alolipdf.app` SaaS.
+
+| **Application alolipdf.app** elle-même (futur SaaS)
+| Bundle dans un conteneur, déployé via crystal-beryl
+| Image OCI / Docker / archive tar.
+|===
+
+L'« installateur » correspond probablement au **profil 2**
+principalement. À valider avec Philippe avant de dimensionner.
+
+== Cinq voies, du plus léger au plus lourd
+
+=== A. Script d'installation `curl | sh`
+
+[source,shell]
+----
+curl -fsSL https://aloli-crystal.github.io/pdf-tools/install.sh | sh
+----
+
+Le script :
+
+. Détecte OS + arch (macOS arm64/x64, FreeBSD, Linux x86_64)
+. Télécharge les binaires précompilés depuis GitHub Releases
+. Vérifie les checksums (sha256)
+. Vérifie / installe les deps système (`ghostscript`, `qpdf`,
+  `openssl`) avec messages clairs
+. Met les binaires dans `~/.local/bin` ou `/usr/local/bin` selon
+  les droits
+. Optionnel : installe les complétions shell (`bash`, `zsh`, `fish`)
+
+**Pré-requis** : un job CI qui produit les binaires multi-arch et
+les pousse en release. Partiellement déjà en place avec
+`aloli-crystal/bin-installer`.
+
+**Effort** : 1-2 jours.
+**Pour qui** : tout le monde, c'est le plus universel.
+**Limites** : pas de mise à jour automatique, pas de
+désinstallation propre.
+
+=== B. Homebrew tap `aloli-crystal/tools`
+
+[source,shell]
+----
+brew tap aloli-crystal/tools
+brew install aloli-pdf            # méta-formule qui tire tout
+# ou granulaire :
+brew install crystal-combine-pdf
+brew install watermark
+----
+
+Création du repo `aloli-crystal/homebrew-tools` avec une formule
+Ruby par outil :
+
+[source,ruby]
+----
+class CrystalCombinePdf < Formula
+  desc "PDF assembly, compression, encryption — Crystal native"
+  homepage "https://github.com/aloli-crystal/crystal-combine-pdf"
+  url "https://github.com/aloli-crystal/crystal-combine-pdf/archive/v1.0.31.37.tar.gz"
+  sha256 "..."
+  license "MIT"
+
+  depends_on "crystal" => :build
+  depends_on "ghostscript"
+  depends_on "qpdf"
+
+  def install
+    system "shards", "install"
+    system "shards", "build", "--release"
+    bin.install "bin/crystal-combine-pdf"
+  end
+
+  test do
+    assert_match version.to_s,
+                 shell_output("#{bin}/crystal-combine-pdf --version")
+  end
+end
+----
+
+**Effort** : 3-5 jours (4 formules + meta + workflow auto-bump
+sha256).
+**Pour qui** : utilisateurs macOS et Linux Homebrew (devient
+majoritaire en 2026).
+**Limites** : exclut FreeBSD et Windows. Demande un maintainer
+pour synchroniser les `sha256` à chaque release (peut être
+automatisé via GitHub Actions).
+
+=== C. Méta-shard `aloli-crystal/pdf-tools`
+
+Un shard qui ne fait rien de cryptographique mais **agrège** :
+
+[source,yaml]
+----
+# pdf-tools/shard.yml
+name: pdf-tools
+dependencies:
+  pdf:                  { github: aloli-crystal/pdf }
+  crystal-combine-pdf:  { github: aloli-crystal/crystal-combine-pdf }
+  pdf-signature:        { github: aloli-crystal/pdf-signature }
+  watermark:            { github: aloli-crystal/watermark }
+  ghostscript:          { github: aloli-crystal/ghostscript }
+targets:
+  alolipdf:             { main: src/cli.cr }
+----
+
+Le binaire `alolipdf` est un dispatcher single-binary :
+
+[source,shell]
+----
+alolipdf merge a.pdf b.pdf -o out.pdf      # → crystal-combine-pdf merge
+alolipdf compress doc.pdf -L                # → crystal-combine-pdf compress -L
+alolipdf encrypt rapport.pdf -u secret      # → crystal-combine-pdf encrypt
+alolipdf sign rapport.pdf --p12 …           # → pdf-signature
+alolipdf watermark doc.pdf "DRAFT"          # → watermark
+alolipdf decrypt doc.pdf …                  # → crystal-combine-pdf decrypt
+alolipdf help <sub>                         # convention ALOLI
+----
+
+**Effort** : 1-2 jours (squelette + dispatcher + CI).
+**Pour qui** : utilisateurs qui veulent **un** outil pour tous
+les usages PDF, plutôt que 4 binaires séparés.
+**Avantage** : un seul binaire à distribuer (par voie A ou B),
+pas 4. Cohérent avec le futur `alolipdf.app` (même nom).
+**Limite** : le binaire pèse plus (somme des deps) — ~30-50 Mo
+en release. Pas un blocage en 2026.
+
+=== D. Package natif (.pkg macOS, .deb, FreeBSD pkg)
+
+Pour chaque plateforme :
+
+* **macOS .pkg** signé Apple Developer ID (~99 €/an) + notarisé
++
+--
+** Installe dans `/usr/local/bin` ou `/Applications/AloliPDF.app`
+** Code-signing obligatoire depuis Gatekeeper (sinon « cannot be
+   opened because the developer cannot be verified »)
+--
+* **Debian .deb** dans un dépôt apt hébergé
++
+--
+** `apt install aloli-pdf` après ajout du dépôt
+** Signature GPG du dépôt
+--
+* **FreeBSD pkg** dans un dépôt poudriere ou ports tree
+
+**Effort** : 1-2 semaines par plateforme.
+**Pour qui** : DSI / sysadmins qui veulent passer par leur
+gestionnaire de packages habituel pour audit / inventaire.
+**Limite** : coût d'entretien réel, mécanique de release lourde.
+
+=== E. Conteneur OCI
+
+[source,dockerfile]
+----
+FROM crystallang/crystal:1.19-alpine AS build
+COPY . /src
+RUN cd /src && shards build --release --static
+
+FROM alpine:latest
+RUN apk add --no-cache ghostscript qpdf openssl
+COPY --from=build /src/bin/* /usr/local/bin/
+ENTRYPOINT ["/usr/local/bin/alolipdf"]
+----
+
+[source,shell]
+----
+docker run --rm -v $PWD:/work -w /work \
+  ghcr.io/aloli-crystal/pdf-tools:latest \
+  encrypt rapport.pdf -u secret -L
+----
+
+**Effort** : 3-4 jours (Dockerfile + GitHub Actions multi-arch
+publish vers ghcr.io).
+**Pour qui** : intégration CI/CD, alolipdf.app lui-même.
+**Limite** : friction UX importante pour Philippe-le-DPO.
+
+== Pièges spécifiques à anticiper
+
+[cols="1,3",options="header"]
+|===
+| Problème | Réponse
+
+| **macOS Gatekeeper** : un binaire non-signé déclenche « cannot
+  be opened because the developer cannot be verified »
+| Soit signature Apple Developer ID (~99 €/an) + notarisation,
+  soit accepter que les utilisateurs fassent
+  `xattr -d com.apple.quarantine` à la main.
+
+| **Liaisons dynamiques Crystal** : `libcrystal`, `libgc`,
+  `libpcre`, `libssl`
+| Compiler avec `--static` (+ Alpine pour la libc) ou bundler
+  les dylibs avec `dyld_install_name_tool`. La voie statique est
+  la plus propre.
+
+| **Dépendances système** (`ghostscript`, `qpdf`, `openssl`)
+| Soit déclarer comme deps explicites dans la formule
+  Homebrew / .deb (préféré), soit bundler (lourd, mauvaise
+  pratique sécu : pas d'updates).
+
+| **Synchronisation des versions** entre les ~4 outils
+| Le méta-shard `pdf-tools` (option C) résout en figeant chaque
+  dep à une version exacte. Sans ça, il faut un orchestrateur
+  de release.
+
+| **Release multi-shard** : bumper `pdf` v0.5.5 nécessite de
+  bumper aussi `pdf-signature`, `crystal-combine-pdf`, etc.
+| Convention ALOLI actuelle : bump indépendant à chaque feature,
+  sans `release-train`. À conserver — sinon on perd la
+  granularité du tag-par-commit.
+
+| **Certificats / clés / mots de passe** (pour `encrypt`, `sign`)
+| L'installateur n'embarque PAS de secrets. Doc claire : iCloud
+  Keychain (macOS), `~/.config/aloli/` ou prompt interactif.
+
+| **Mise à jour automatique**
+| Phase ultérieure. Pour l'instant : Homebrew gère, ou les
+  utilisateurs lancent à nouveau `install.sh`.
+|===
+
+== Trajectoire recommandée pour ALOLI
+
+Vu le profil (parc machines minimal, focus alolipdf.app moyen
+terme, préférence outils natifs), trois phases successives :
+
+=== Phase 1 — Homebrew tap + script curl (~3 jours)
+
+. Créer `aloli-crystal/homebrew-tap` avec 4 formules
+  (`crystal-combine-pdf`, `watermark`, `prism` cask, `alolipdf`
+  méta).
+. Créer `aloli-crystal/pdf-tools` (méta-shard option C) qui
+  produit un binaire `alolipdf` unique.
+. CI dans chaque shard : build du binaire en release, upload sur
+  GitHub Releases.
+. Script `install.sh` simple côté tap pour FreeBSD / Linux
+  non-brew.
+
+**Cible** : Philippe lui-même, ses clients ISO 27001, la
+communauté Crystal francophone.
+
+=== Phase 2 — Image OCI + complétions shell (1 semaine, à 3-6 mois)
+
+. Image `ghcr.io/aloli-crystal/pdf-tools:latest`.
+. Complétions `bash` / `zsh` / `fish` générées depuis OptionParser.
+. Page de documentation centrale `aloli-crystal/docs` qui agrège
+  tout.
+
+**Cible** : intégration alolipdf.app + automatisations CI/CD.
+
+=== Phase 3 — Distribution sectorielle (12-24 mois, conditionnel)
+
+Si des clients DPO / notaires exigent un installateur officiel :
+
+* macOS .pkg signé + notarisé (Developer ID Apple, ~99 €/an)
+* Debian repo APT signé GPG (hébergé sur un VPS OVH / Scaleway)
+* Inclusion dans homebrew-core ou similaire (plus de visibilité)
+
+**Cible** : positionnement « éditeur logiciel » d'ALOLI.
+
+== Plan minimum viable utile
+
+Si on veut avancer **maintenant** :
+
+. **Méta-shard `aloli-crystal/pdf-tools`** (option C) — UN binaire
+  `alolipdf` qui dispatche vers tout le reste. Bénéfice double :
+  pour Philippe au quotidien, et pour la stratégie marketing
+  (un seul nom à retenir, cohérent avec le futur alolipdf.app).
+. **GitHub Releases avec binaires précompilés** — étendre la CI de
+  `pdf-tools` pour produire les binaires macOS-arm64,
+  macOS-x86_64, linux-x86_64, FreeBSD-amd64, et les uploader.
+. **Homebrew tap** (option B) qui pointe sur les Releases — cible
+  immédiate sur le Mac de Philippe.
+. **Script `install.sh`** sur https://aloli-crystal.github.io/pdf-tools/
+  pour les autres OS.
+
+Environ **3-4 jours** d'effort cumulés. Donne :
+
+* `brew install aloli-crystal/tools/alolipdf` sur Mac
+* `curl -fsSL https://aloli-crystal.github.io/pdf-tools/install.sh | sh`
+  ailleurs
+* Un binaire unique `alolipdf` qui couvre 90 % des cas d'usage
+  PDF (assembly, compress, encrypt, decrypt, watermark, linearize,
+  futur sign).
+
+== Questions à arbitrer avant de coder
+
+. **Cible primaire** : profil 2 (sysadmins / DPO en CLI) ou aussi
+  profil 3 (utilisateurs finaux via .app) ?
+. **Plateformes** dans la priorité : macOS arm64 + FreeBSD +
+  Debian ? Ou macOS d'abord puis le reste plus tard ?
+. **Single binary `alolipdf` (option C)** ou **binaires séparés**
+  maintenus indépendamment ?
+. **Apple Developer ID** : prêt à investir 99 €/an pour la
+  signature macOS ? (cohérent avec la roadmap PAdES)
+. **Domaine** : `alolipdf.app` est réservé — devient l'URL de
+  l'installer même avant le SaaS ?
+
+NOTE: Réponses à ces 5 questions ↦ je peux démarrer le `pdf-tools`
+méta-shard et l'enchaîner avec la CI binaire + Homebrew tap.
+Effort total estimé : 3-4 jours focalisés.
+
+== Références internes
+
+* `feedback_shard_naming.md` — convention nommage (creations sans
+  préfixe `crystal-`)
+* `feedback_shard_version_macro.md` — VERSION lue depuis shard.yml
+* `feedback_cli_help_subcommand.md` — convention `<cli> help [<sub>]`
+* `reference_shard_template.md` — template officiel des shards
+* `roadmap_pdf_linearization.md` — décision shell-out qpdf vs natif
+  (même logique que ce document : ne pas réinventer ce que
+  l'écosystème fait déjà)
+
+== Note historique
+
+Discussion datée 2026-05-10 entre Philippe Nénert et Claude. Le
+document a été demandé dans la foulée de la livraison du
+flag `--linearize` (`crystal-combine-pdf` v1.0.31.37). À reprendre
+quand Philippe aura répondu aux 5 questions ci-dessus, ou quand
+un cas d'usage concret rendra l'installateur prioritaire (ex. un
+client ISO 27001 qui demande à signer ses rapports d'audit avec
+nos outils).

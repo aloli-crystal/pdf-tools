@@ -1,0 +1,76 @@
+= aloli-crystal/pdf-tools — `alolipdf`
+:toc: left
+:toc-title: Contents
+
+Unified `alolipdf` command-line front-end for the ALOLI PDF tool suite.
+One discoverable entry point — `alolipdf <tool> …` — over the whole
+suite, with consistent UX and a `doctor` that tells you what's installed.
+
+== How it works
+
+`alolipdf` is a **thin dispatcher**: each subcommand is forwarded to the
+matching standalone binary, inheriting its stdio and exit code.
+
+[cols="1,3,3",options="header"]
+|===
+| Subcommand | Forwards to | What it does
+
+| `combine`   | `crystal-combine-pdf` | merge / number / compress / encrypt PDFs
+| `validate`  | `pdf-validate`        | PDF/A-1b·2b·3b and PDF/UA conformance
+| `sign`      | `pdf-sign sign`       | sign a PDF (PAdES B-B → B-LTA, TSA, LTV, PKCS#11)
+| `verify`    | `pdf-sign verify`     | verify a PDF's signatures
+| `watermark` | `watermark`           | stamp a watermark
+|===
+
+Plus the built-ins `help [<tool>]`, `version`, and `doctor`.
+
+It deliberately **shells out** instead of linking the shards together:
+their `pdf` dependency versions conflict (combine-pdf on 0.5.x, the
+validator/signer on 1.x), so a single compiled binary isn't possible
+today. This façade delivers the unified UX now.
+
+== Install
+
+Build, then symlink the binary into your `PATH`:
+
+[source,shell]
+----
+shards build --release
+ln -s "$PWD/bin/alolipdf" ~/bin/alolipdf
+----
+
+Each underlying tool is resolved from `$ALOLIPDF_<TOOL>` (an explicit
+path) or by name on `PATH`. Run `alolipdf doctor` to check coverage:
+
+[source,console]
+----
+$ alolipdf doctor
+  ✓ crystal-combine-pdf  →  /Users/you/bin/crystal-combine-pdf
+  ✗ pdf-sign  (absent ; définir $ALOLIPDF_SIGN ou l'installer dans le PATH)
+----
+
+== Quickstart
+
+[source,shell]
+----
+export P12_PASS=…                  # passphrase lives in an env var, not argv
+alolipdf combine merge a.pdf b.pdf -o book.pdf
+alolipdf sign -i book.pdf -o book-signed.pdf -c signer.p12 -p P12_PASS -l b-lt
+alolipdf verify book-signed.pdf -a trust.pem
+alolipdf validate book-signed.pdf -p pdf-a-2b
+----
+
+Everything after the subcommand is passed through **verbatim**, so the
+full flag surface is exactly each tool's own — no duplication, always in
+sync. Secrets are never touched: pdf-sign's passphrase/PIN convention
+(the *name* of an environment variable) flows straight through.
+
+== Status
+
+First palier (0.1.0): the dispatcher, `doctor`, and `help`/`version` are
+complete and tested. A future palier may grow an installer (Homebrew tap
++ `curl | sh`) — see `doc/INSTALLER.adoc`.
+
+== License
+
+MIT — see `LICENSE`.

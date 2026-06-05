@@ -1,0 +1,33 @@
+= Changelog
+:toc: left
+:toc-title: Versions
+
+Toutes les modifications notables de `aloli-crystal/pdf-tools`
+sont documentées ici. Le format suit
+https://keepachangelog.com/1.1.0/[Keep a Changelog] et le
+versioning suit https://semver.org/[SemVer]
+(3 chiffres pour création, 4 pour portage de gem Ruby).
+
+== v0.1.0 — 2026-06-05
+
+=== Ajouté
+
+* Création du shard à partir du template
+  https://github.com/aloli-crystal/shard-template[aloli-crystal/shard-template].
+* **Dispatcher `alolipdf`** (`AloliPdf::Dispatcher`) — façade unifiée sur
+  la suite PDF ALOLI. Chaque sous-commande relaie au binaire autonome
+  correspondant, en héritant de la sortie et du code de retour :
+** `combine` → `crystal-combine-pdf`, `validate` → `pdf-validate`,
+   `sign` → `pdf-sign sign`, `verify` → `pdf-sign verify`,
+   `watermark` → `watermark`.
+* Commandes intégrées `help [<outil>]`, `version` et `doctor` (indique
+  quels outils sous-jacents sont installés).
+* Résolution du binaire par outil : `$ALOLIPDF_<OUTIL>` (chemin explicite)
+  puis le nom sur le `PATH`. Tout ce qui suit la sous-commande est relayé
+  tel quel, donc les secrets (p. ex. la phrase de passe de pdf-sign passée
+  par nom de variable d'env) ne transitent jamais par argv via cette
+  couche.
+* Choix de conception : shell-out plutôt que liaison des shards (versions
+  de `pdf` incompatibles). Cf. `doc/INSTALLER.adoc` pour la feuille de
+  route d'empaquetage.
+* Module `AloliPdf` avec `VERSION` lue au compile-time depuis `shard.yml`.

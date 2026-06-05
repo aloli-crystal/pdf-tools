@@ -1,0 +1,31 @@
+= Changelog
+:toc: left
+:toc-title: Versions
+
+All notable changes to `aloli-crystal/pdf-tools` are documented
+here. The format follows
+https://keepachangelog.com/1.1.0/[Keep a Changelog] and
+versioning follows https://semver.org/[SemVer]
+(3-digit for creations, 4-digit for ports of Ruby gems).
+
+== v0.1.0 — 2026-06-05
+
+=== Added
+
+* Shard created from
+  https://github.com/aloli-crystal/shard-template[aloli-crystal/shard-template].
+* **`alolipdf` dispatcher** (`AloliPdf::Dispatcher`) — a unified
+  front-end over the ALOLI PDF suite. Each subcommand forwards to the
+  matching standalone binary, inheriting stdio and exit code:
+** `combine` → `crystal-combine-pdf`, `validate` → `pdf-validate`,
+   `sign` → `pdf-sign sign`, `verify` → `pdf-sign verify`,
+   `watermark` → `watermark`.
+* Built-ins `help [<tool>]`, `version`, and `doctor` (reports which
+  underlying tools are installed).
+* Per-tool binary resolution: `$ALOLIPDF_<TOOL>` (explicit path) then the
+  name on `PATH`. Everything after the subcommand is forwarded verbatim,
+  so secrets (e.g. pdf-sign's env-var-name passphrase) never reach argv
+  via this layer.
+* Design note: shells out rather than linking the shards (their `pdf`
+  versions conflict). See `doc/INSTALLER.adoc` for the packaging roadmap.
+* `AloliPdf` module with `VERSION` read at compile-time from `shard.yml`.

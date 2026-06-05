@@ -1,0 +1,31 @@
+name: pdf-tools
+version: 0.1.0
+
+description: |
+  Unified `alolipdf` command-line front-end for the ALOLI PDF tool
+  suite. A thin dispatcher that forwards each subcommand to the matching
+  standalone binary (crystal-combine-pdf, pdf-validate, pdf-sign,
+  watermark…), so the whole suite is reachable through one discoverable
+  entry point without coupling their (sometimes conflicting) dependency
+  trees.
+
+authors:
+  - Philippe Nénert <philippe@aloli.fr>
+
+crystal: ">= 1.10.0"
+
+license: MIT
+
+# No shard dependencies on purpose : alolipdf shells out to each tool's
+# own binary, so the suite's incompatible `pdf` versions never have to be
+# resolved together. The pattern mirrors combine-pdf's qpdf/gs/pdf-sign
+# integrations.
+
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba
+    version: "~> 1.6"
+
+targets:
+  alolipdf:
+    main: src/cli.cr

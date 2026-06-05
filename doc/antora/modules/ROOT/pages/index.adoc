@@ -1,0 +1,22 @@
+= alolipdf — suite d’outils PDF ALOLI
+:description: Façade unifiée `alolipdf` pour la suite d’outils PDF ALOLI (combine, validate, sign, verify, watermark).
+
+Façade unifiée `alolipdf` pour la suite d’outils PDF ALOLI (combine, validate, sign, verify, watermark).
+
+== Statut
+
+* *Version* : {page-component-display-version}
+* *Repo* : https://github.com/aloli-crystal/pdf-tools[aloli-crystal/pdf-tools]
+* *Licence* : MIT
+
+== Quickstart
+
+[source,crystal]
+----
+require "pdf-tools"
+
+# … exemple d'utilisation …
+----
+
+Pour les détails, voir xref:usage.adoc[Utilisation] ou
+xref:api.adoc[API].

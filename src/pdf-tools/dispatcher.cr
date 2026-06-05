@@ -49,6 +49,10 @@ module AloliPdf
         nil, "pdfattach", "ALOLIPDF_ATTACH"),
       Tool.new("tops", "Convertir un PDF en PostScript / EPS (relais ghostscript)",
         nil, "pdftops", "ALOLIPDF_TOPS"),
+      Tool.new("text", "Extraire le texte positionné d'un PDF (--json, --pages)",
+        nil, "pdf2text", "ALOLIPDF_TEXT"),
+      Tool.new("tohtml", "Convertir un PDF en HTML positionné",
+        nil, "pdftohtml", "ALOLIPDF_TOHTML"),
     ]
 
     # Runs the dispatcher against a full argv. Returns the exit code.

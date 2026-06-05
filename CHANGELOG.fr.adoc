@@ -8,6 +8,20 @@ https://keepachangelog.com/1.1.0/[Keep a Changelog] et le
 versioning suit https://semver.org/[SemVer]
 (3 chiffres pour création, 4 pour portage de gem Ruby).
 
+== v0.8.0 — 2026-06-05 — Sous-commandes `text` et `tohtml` (pdf2text, pdftohtml)
+
+=== Ajouté
+
+* **Sous-commande `tohtml`** → `pdftohtml` (convertir un PDF en HTML
+  positionné), et **sous-commande `text`** → `pdf2text` (extraire le
+  texte positionné, `--json` / `--pages`). Outils externes nommés
+  d'après poppler, donc en shell-out, résolus via `$ALOLIPDF_TOHTML` /
+  `$ALOLIPDF_TEXT` puis le `PATH`.
+* Avec elles, tout l'ensemble des poppler-utils portés par ALOLI est
+  accessible via `alolipdf` : `info`, `fonts`, `detach`, `attach`,
+  `images`, `tops`, `text`, `tohtml` (externes) plus `combine`,
+  `validate`, `sign`, `verify`, `watermark` (in-process).
+
 == v0.7.0 — 2026-06-05 — Sous-commande `tops` (pdftops)
 
 === Ajouté

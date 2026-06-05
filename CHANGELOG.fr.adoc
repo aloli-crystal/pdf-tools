@@ -8,6 +8,20 @@ https://keepachangelog.com/1.1.0/[Keep a Changelog] et le
 versioning suit https://semver.org/[SemVer]
 (3 chiffres pour création, 4 pour portage de gem Ruby).
 
+== v0.9.0 — 2026-06-06 — Sous-commandes `toppm` et `tocairo` (rasterizer natif)
+
+=== Ajouté
+
+* **Sous-commande `toppm`** → `pdftoppm` et **sous-commande `tocairo`**
+  → `pdftocairo` (rendre les pages d'un PDF en PNG/PPM via le rasterizer
+  natif `PDF::Raster` — sans ghostscript). Shell-outs résolus via
+  `$ALOLIPDF_TOPPM` / `$ALOLIPDF_TOCAIRO` puis le `PATH`.
+* **Tout l'ensemble des poppler-utils est désormais accessible via
+  `alolipdf`** : `info`, `fonts`, `detach`, `attach`, `images`, `tops`,
+  `text`, `tohtml`, `toppm`, `tocairo` (externes) + `combine`,
+  `validate`, `sign`, `verify`, `watermark` (in-process). (Le rendu
+  raster est au stade MVP — vectoriel uniquement.)
+
 == v0.8.0 — 2026-06-05 — Sous-commandes `text` et `tohtml` (pdf2text, pdftohtml)
 
 === Ajouté

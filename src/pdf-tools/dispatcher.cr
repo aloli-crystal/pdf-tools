@@ -53,6 +53,10 @@ module AloliPdf
         nil, "pdf2text", "ALOLIPDF_TEXT"),
       Tool.new("tohtml", "Convertir un PDF en HTML positionné",
         nil, "pdftohtml", "ALOLIPDF_TOHTML"),
+      Tool.new("toppm", "Rendre les pages d'un PDF en PNG/PPM (rasterizer natif)",
+        nil, "pdftoppm", "ALOLIPDF_TOPPM"),
+      Tool.new("tocairo", "Rendre les pages d'un PDF en PNG (rasterizer natif)",
+        nil, "pdftocairo", "ALOLIPDF_TOCAIRO"),
     ]
 
     # Runs the dispatcher against a full argv. Returns the exit code.

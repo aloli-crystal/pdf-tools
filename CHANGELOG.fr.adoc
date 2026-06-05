@@ -8,6 +8,17 @@ https://keepachangelog.com/1.1.0/[Keep a Changelog] et le
 versioning suit https://semver.org/[SemVer]
 (3 chiffres pour création, 4 pour portage de gem Ruby).
 
+== v0.6.0 — 2026-06-05 — Sous-commande `attach` (pdfattach)
+
+=== Ajouté
+
+* **Sous-commande `attach`** → `pdfattach` (joindre un fichier à un
+  PDF — `/EmbeddedFiles` + `/AF`, Factur-X). Comme les autres outils
+  nommés d'après poppler, elle reste en shell-out, résolue via
+  `$ALOLIPDF_ATTACH` puis le `PATH`. Tout le flux de fichiers
+  embarqués (`detach`/`attach`/`images`) est désormais accessible via
+  `alolipdf`.
+
 == v0.5.0 — 2026-06-05 — Sous-commande `images` (pdfimages)
 
 === Ajouté

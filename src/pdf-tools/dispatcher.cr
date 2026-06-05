@@ -45,6 +45,8 @@ module AloliPdf
         nil, "pdfdetach", "ALOLIPDF_DETACH"),
       Tool.new("images", "Lister et extraire les images d'un PDF (--list, --save-all)",
         nil, "pdfimages", "ALOLIPDF_IMAGES"),
+      Tool.new("attach", "Joindre un fichier à un PDF (/EmbeddedFiles + /AF, Factur-X)",
+        nil, "pdfattach", "ALOLIPDF_ATTACH"),
     ]
 
     # Runs the dispatcher against a full argv. Returns the exit code.

@@ -8,6 +8,20 @@ https://keepachangelog.com/1.1.0/[Keep a Changelog] et le
 versioning suit https://semver.org/[SemVer]
 (3 chiffres pour création, 4 pour portage de gem Ruby).
 
+== v0.2.0 — 2026-06-05
+
+=== Ajouté
+
+* **Deux nouvelles sous-commandes** branchant les outils de
+  métadonnées PDF dans le dispatcher :
+** `info` → `pdfinfo` (métadonnées du document : titre, dates, pages,
+   version…),
+** `fonts` → `pdffonts` (liste des fontes : type, encodage, embarquée,
+   sous-ensemble).
+* Binaires résolus comme d'habitude via `$ALOLIPDF_INFO` /
+  `$ALOLIPDF_FONTS` puis le `PATH` ; les deux apparaissent dans
+  `alolipdf help` et `alolipdf doctor`.
+
 == v0.1.0 — 2026-06-05
 
 === Ajouté

@@ -34,6 +34,10 @@ module AloliPdf
         "Vérifier les signatures d'un PDF"),
       Tool.new("watermark", "watermark", "ALOLIPDF_WATERMARK", [] of String,
         "Apposer un filigrane sur un PDF"),
+      Tool.new("info", "pdfinfo", "ALOLIPDF_INFO", [] of String,
+        "Afficher les métadonnées d'un PDF (titre, dates, pages, version…)"),
+      Tool.new("fonts", "pdffonts", "ALOLIPDF_FONTS", [] of String,
+        "Lister les fontes d'un PDF (type, encodage, embarquée, subset)"),
     ]
 
     # Runs the dispatcher against a full argv. Returns the process exit

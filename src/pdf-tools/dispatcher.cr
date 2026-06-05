@@ -43,6 +43,8 @@ module AloliPdf
         nil, "pdffonts", "ALOLIPDF_FONTS"),
       Tool.new("detach", "Lister et extraire les fichiers attachés d'un PDF (--list, --save)",
         nil, "pdfdetach", "ALOLIPDF_DETACH"),
+      Tool.new("images", "Lister et extraire les images d'un PDF (--list, --save-all)",
+        nil, "pdfimages", "ALOLIPDF_IMAGES"),
     ]
 
     # Runs the dispatcher against a full argv. Returns the exit code.

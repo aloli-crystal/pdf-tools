@@ -47,6 +47,8 @@ module AloliPdf
         nil, "pdfimages", "ALOLIPDF_IMAGES"),
       Tool.new("attach", "Joindre un fichier à un PDF (/EmbeddedFiles + /AF, Factur-X)",
         nil, "pdfattach", "ALOLIPDF_ATTACH"),
+      Tool.new("tops", "Convertir un PDF en PostScript / EPS (relais ghostscript)",
+        nil, "pdftops", "ALOLIPDF_TOPS"),
     ]
 
     # Runs the dispatcher against a full argv. Returns the exit code.

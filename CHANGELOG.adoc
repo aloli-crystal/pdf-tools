@@ -8,6 +8,16 @@ https://keepachangelog.com/1.1.0/[Keep a Changelog] and
 versioning follows https://semver.org/[SemVer]
 (3-digit for creations, 4-digit for ports of Ruby gems).
 
+== v0.7.0 — 2026-06-05 — `tops` subcommand (pdftops)
+
+=== Added
+
+* **`tops` subcommand** → `pdftops` (convert a PDF to PostScript / EPS,
+  a ghostscript relay). Like the other poppler-named tools it stays a
+  shell-out, resolved via `$ALOLIPDF_TOPS` then `PATH`. `pdftops` lives
+  in the `ghostscript` shard (it drives `gs`, not native PostScript
+  generation).
+
 == v0.6.0 — 2026-06-05 — `attach` subcommand (pdfattach)
 
 === Added

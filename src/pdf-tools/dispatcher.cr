@@ -1,47 +1,49 @@
 module AloliPdf
   # The `alolipdf` dispatcher : one discoverable entry point for the whole
-  # ALOLI PDF suite. Each subcommand is forwarded to the matching
-  # standalone binary (combine, validate, sign/verify, watermark…),
-  # inheriting stdio so the user sees the tool's own output and exit code.
+  # ALOLI PDF suite.
   #
-  # We shell out rather than link the shards together : their `pdf`
-  # versions conflict (combine-pdf on 0.5.x, the validators/signer on
-  # 1.x), so a single compiled megabinary isn't possible today. This
-  # façade gives the unified UX now, and can become a megabinary later if
-  # the versions are ever unified.
+  # Now a genuine **compiled megabinary**: the ALOLI Crystal tools
+  # (combine, validate, sign/verify, watermark) are linked in and invoked
+  # *in-process* via each tool's `Cli.run(argv) : Int32` entry point — no
+  # child process, no separate binaries to install. This became possible
+  # once the whole suite was levelled onto `pdf` 1.x.
   #
-  # Binary resolution per tool : `$ALOLIPDF_<TOOL>` (an explicit path)
-  # first, otherwise the candidate name on `PATH`. Secrets are never
-  # touched — args (incl. pdf-sign's env-var-name passphrase convention)
-  # are forwarded verbatim.
+  # External, non-ALOLI tools (poppler's `pdfinfo` / `pdffonts`) are not
+  # ours to compile, so `info` / `fonts` stay **shell-outs**, resolved via
+  # `$ALOLIPDF_<TOOL>` then `PATH`. The dispatcher is therefore hybrid.
+  #
+  # Secrets are never touched : args (incl. pdf-sign's env-var-name
+  # passphrase convention) are forwarded verbatim.
   module Dispatcher
-    # One `alolipdf` subcommand and the binary it drives.
+    alias Runner = Proc(Array(String), Int32)
+
+    # One `alolipdf` subcommand. Exactly one of `runner` (in-process,
+    # compiled-in ALOLI tool) or `binary` (external shell-out tool) is set.
     record Tool,
       key : String,
-      binary : String,
-      env : String,
-      prepend : Array(String),
-      summary : String
+      summary : String,
+      runner : Runner?,
+      binary : String?,
+      env : String?
 
     TOOLS = [
-      Tool.new("combine", "crystal-combine-pdf", "ALOLIPDF_COMBINE", [] of String,
-        "Fusionner, numéroter, compresser ou chiffrer des PDF"),
-      Tool.new("validate", "pdf-validate", "ALOLIPDF_VALIDATE", [] of String,
-        "Valider la conformité PDF/A (1b, 2b, 3b) et PDF/UA"),
-      Tool.new("sign", "pdf-sign", "ALOLIPDF_SIGN", ["sign"],
-        "Signer un PDF (PAdES B-B → B-LTA, horodatage, LTV, PKCS#11)"),
-      Tool.new("verify", "pdf-sign", "ALOLIPDF_SIGN", ["verify"],
-        "Vérifier les signatures d'un PDF"),
-      Tool.new("watermark", "watermark", "ALOLIPDF_WATERMARK", [] of String,
-        "Apposer un filigrane sur un PDF"),
-      Tool.new("info", "pdfinfo", "ALOLIPDF_INFO", [] of String,
-        "Afficher les métadonnées d'un PDF (titre, dates, pages, version…)"),
-      Tool.new("fonts", "pdffonts", "ALOLIPDF_FONTS", [] of String,
-        "Lister les fontes d'un PDF (type, encodage, embarquée, subset)"),
+      Tool.new("combine", "Fusionner, numéroter, compresser ou chiffrer des PDF",
+        ->(a : Array(String)) { CombinePDF::Cli.run(a) }, nil, nil),
+      Tool.new("validate", "Valider la conformité PDF/A (1b, 2b, 3b) et PDF/UA",
+        ->(a : Array(String)) { PDF::Validate::CLI.run(a) }, nil, nil),
+      Tool.new("sign", "Signer un PDF (PAdES B-B → B-LTA, horodatage, LTV, PKCS#11)",
+        ->(a : Array(String)) { PDF::Signature::Cli.run(["sign"] + a) }, nil, nil),
+      Tool.new("verify", "Vérifier les signatures d'un PDF",
+        ->(a : Array(String)) { PDF::Signature::Cli.run(["verify"] + a) }, nil, nil),
+      Tool.new("watermark", "Apposer un filigrane sur un PDF",
+        ->(a : Array(String)) { Watermark::Cli.run(a) }, nil, nil),
+      Tool.new("info", "Afficher les métadonnées d'un PDF (titre, dates, pages, version…)",
+        nil, "pdfinfo", "ALOLIPDF_INFO"),
+      Tool.new("fonts", "Lister les fontes d'un PDF (type, encodage, embarquée, subset)",
+        nil, "pdffonts", "ALOLIPDF_FONTS"),
     ]
 
-    # Runs the dispatcher against a full argv. Returns the process exit
-    # code to propagate.
+    # Runs the dispatcher against a full argv. Returns the exit code.
     def self.run(argv : Array(String)) : Int32
       case sub = argv[0]?
       when nil, "help", "-h", "--help"
@@ -54,7 +56,7 @@ module AloliPdf
       else
         tool = TOOLS.find { |entry| entry.key == sub }
         if tool
-          forward(tool, argv[1..])
+          dispatch(tool, argv[1..])
         else
           STDERR.puts "alolipdf : sous-commande inconnue « #{sub} »."
           STDERR.puts "Essayez `alolipdf help` (outils : #{TOOLS.map(&.key).join(", ")})."
@@ -63,16 +65,17 @@ module AloliPdf
       end
     end
 
-    # Resolves a tool's binary : `$ALOLIPDF_<TOOL>` then PATH ; nil if none.
-    def self.resolve(tool : Tool) : String?
-      if explicit = ENV[tool.env]?
-        return explicit unless explicit.empty?
+    # In-process call for compiled-in tools, shell-out for external ones.
+    def self.dispatch(tool : Tool, args : Array(String)) : Int32
+      if runner = tool.runner
+        runner.call(args)
+      else
+        forward(tool, args)
       end
-      Process.find_executable(tool.binary)
     end
 
-    # Forwards `args` to the tool's binary (prefixed by its fixed
-    # `prepend`, e.g. pdf-sign's `sign`/`verify`), inheriting stdio.
+    # Shell-out for external (non-ALOLI) tools : `$ALOLIPDF_<TOOL>` then
+    # `PATH`, inheriting stdio. Only reached for `info` / `fonts`.
     def self.forward(tool : Tool, args : Array(String)) : Int32
       target = resolve(tool)
       unless target
@@ -81,15 +84,26 @@ module AloliPdf
       end
       Process.run(
         target,
-        tool.prepend + args,
+        args,
         input: Process::Redirect::Inherit,
         output: Process::Redirect::Inherit,
         error: Process::Redirect::Inherit,
       ).exit_code
     end
 
+    # Resolves an external tool's binary : `$ALOLIPDF_<TOOL>` then PATH.
+    def self.resolve(tool : Tool) : String?
+      if (env = tool.env) && (explicit = ENV[env]?)
+        return explicit unless explicit.empty?
+      end
+      if name = tool.binary
+        return Process.find_executable(name)
+      end
+      nil
+    end
+
     # `alolipdf help [<tool>]` : global banner, or delegate to the tool's
-    # own `-h` when a tool is named.
+    # own `-h` (in-process or shell-out).
     def self.help(target : String?) : Int32
       if target.nil? || target.empty?
         puts banner
@@ -100,57 +114,49 @@ module AloliPdf
         STDERR.puts "alolipdf : pas d'aide pour « #{target} » (outils : #{TOOLS.map(&.key).join(", ")})."
         return 2
       end
-      bin = resolve(tool)
-      unless bin
-        STDERR.puts missing(tool)
-        return 2
-      end
-      Process.run(bin, ["-h"],
-        input: Process::Redirect::Inherit,
-        output: Process::Redirect::Inherit,
-        error: Process::Redirect::Inherit).exit_code
+      dispatch(tool, ["-h"])
     end
 
-    # `alolipdf doctor` : which underlying tools are installed.
+    # `alolipdf doctor` : compiled-in tools are always present ; external
+    # tools (info/fonts) are checked on PATH.
     def self.doctor : Int32
       puts "alolipdf #{AloliPdf::VERSION} — diagnostic de la suite PDF ALOLI"
       puts ""
       all_present = true
-      seen = Set(String).new
       TOOLS.each do |tool|
-        next unless seen.add?(tool.binary)
-        path = resolve(tool)
-        if path
-          puts "  ✓ #{tool.binary}  →  #{path}"
+        if tool.runner
+          puts "  ✓ #{tool.key.ljust(10)} compilé dans alolipdf (in-process)"
+        elsif path = resolve(tool)
+          puts "  ✓ #{tool.key.ljust(10)} #{tool.binary} → #{path}"
         else
           all_present = false
-          puts "  ✗ #{tool.binary}  (absent ; définir $#{tool.env} ou l'installer dans le PATH)"
+          puts "  ✗ #{tool.key.ljust(10)} #{tool.binary} absent (définir $#{tool.env} ou l'installer dans le PATH)"
         end
       end
       puts ""
-      puts all_present ? "Tous les outils sont disponibles." : "Des outils manquent (voir ci-dessus)."
+      puts all_present ? "Tous les outils sont disponibles." : "Outil(s) externe(s) manquant(s) — voir ci-dessus."
       all_present ? 0 : 1
     end
 
     private def self.missing(tool : Tool) : String
       String.build do |io|
-        io << "alolipdf : binaire « " << tool.binary << " » introuvable pour `" << tool.key << "`.\n"
-        io << "  Installez le shard aloli-crystal correspondant, puis au choix :\n"
-        io << "    • symlinkez son binaire dans le PATH ;\n"
-        io << "    • ou exportez " << tool.env << "=/chemin/vers/" << tool.binary << "."
+        io << "alolipdf : outil externe « " << tool.binary << " » introuvable pour `" << tool.key << "`.\n"
+        io << "  C'est un outil poppler (non ALOLI). Installez-le (`brew install poppler`,\n"
+        io << "  `apt install poppler-utils`…) ou exportez $" << tool.env << "=/chemin/vers/" << tool.binary << "."
       end
     end
 
     private def self.banner : String
       String.build do |io|
-        io << "alolipdf #{AloliPdf::VERSION} — façade unifiée de la suite PDF ALOLI\n\n"
+        io << "alolipdf #{AloliPdf::VERSION} — suite PDF ALOLI (binaire unifié)\n\n"
         io << "Usage : alolipdf SOUS-COMMANDE [options propres à l'outil]\n\n"
         io << "Sous-commandes :\n"
         TOOLS.each do |tool|
-          io << "  " << tool.key.ljust(10) << tool.summary << "\n"
+          tag = tool.runner ? "" : " (externe)"
+          io << "  " << tool.key.ljust(10) << tool.summary << tag << "\n"
         end
         io << "\n"
-        io << "  doctor    Vérifier quels outils de la suite sont installés\n"
+        io << "  doctor    Vérifier quels outils sont disponibles\n"
         io << "  help [S]  Cette aide, ou délègue à l'aide de la sous-commande S\n"
         io << "  version   Version d'alolipdf\n\n"
         io << "Tout ce qui suit la sous-commande est transmis tel quel à l'outil.\n"

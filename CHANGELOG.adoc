@@ -8,6 +8,30 @@ https://keepachangelog.com/1.1.0/[Keep a Changelog] and
 versioning follows https://semver.org/[SemVer]
 (3-digit for creations, 4-digit for ports of Ruby gems).
 
+== v0.3.0 — 2026-06-05 — Compiled megabinary (ALOLI tools in-process)
+
+=== Changed
+
+* **`alolipdf` is now a single compiled megabinary**, not a shell-out
+  dispatcher. The ALOLI Crystal tools are linked in and invoked
+  *in-process* via each tool's `Cli.run(argv) : Int32`:
+** `combine` → `CombinePDF::Cli`, `validate` → `PDF::Validate::CLI`,
+   `sign`/`verify` → `PDF::Signature::Cli`, `watermark` → `Watermark::Cli`.
+* This became possible once the whole suite was levelled onto `pdf` 1.x
+  (combine-pdf 1.0.31.40, watermark 0.1.6, validate 0.47, sign 0.12 — all
+  on pdf 1.6), and each tool exposed a callable `Cli.run`. No child
+  process, **no separate ALOLI binaries to install**.
+* **Hybrid by necessity**: poppler's `info` (`pdfinfo`) and `fonts`
+  (`pdffonts`) are not ALOLI code, so they stay shell-outs (resolved via
+  `$ALOLIPDF_INFO` / `$ALOLIPDF_FONTS` then `PATH`).
+* `doctor` now reports the five ALOLI tools as “compilé dans alolipdf
+  (in-process)” and only checks the two external tools on `PATH`.
+
+=== Added
+
+* `pdf` shard dependencies on the four ALOLI tools, required by their
+  `src/` paths and called in-process (`Tool#runner`).
+
 == v0.2.0 — 2026-06-05
 
 === Added

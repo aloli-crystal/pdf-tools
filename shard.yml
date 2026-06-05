@@ -1,13 +1,13 @@
 name: pdf-tools
-version: 0.2.0
+version: 0.3.0
 
 description: |
   Unified `alolipdf` command-line front-end for the ALOLI PDF tool
-  suite. A thin dispatcher that forwards each subcommand to the matching
-  standalone binary (crystal-combine-pdf, pdf-validate, pdf-sign,
-  watermark…), so the whole suite is reachable through one discoverable
-  entry point without coupling their (sometimes conflicting) dependency
-  trees.
+  suite — a single compiled megabinary. The ALOLI Crystal tools
+  (crystal-combine-pdf, pdf-validate, pdf-signature, watermark) are
+  linked in and invoked in-process via each tool's `Cli.run`; poppler's
+  `pdfinfo` / `pdffonts` stay shell-outs. One discoverable entry point
+  over the whole suite.
 
 authors:
   - Philippe Nénert <philippe@aloli.fr>
@@ -16,10 +16,22 @@ crystal: ">= 1.10.0"
 
 license: MIT
 
-# No shard dependencies on purpose : alolipdf shells out to each tool's
-# own binary, so the suite's incompatible `pdf` versions never have to be
-# resolved together. The pattern mirrors combine-pdf's qpdf/gs/pdf-sign
-# integrations.
+# The whole suite is levelled onto `pdf` 1.x, so the tools can be
+# compiled together. Each is required by its `src/` path (shard name ≠
+# entry file for some) and called in-process — see src/pdf-tools.cr.
+dependencies:
+  crystal-combine-pdf:
+    github: aloli-crystal/crystal-combine-pdf
+    version: "~> 1.0.31.40"
+  pdf-validate:
+    github: aloli-crystal/pdf-validate
+    version: "~> 0.47"
+  pdf-signature:
+    github: aloli-crystal/pdf-signature
+    version: "~> 0.12"
+  watermark:
+    github: aloli-crystal/watermark
+    version: "~> 0.1.6"
 
 development_dependencies:
   ameba:

@@ -9,32 +9,34 @@ qui est installé.
 
 == Principe
 
-`alolipdf` est un **fin dispatcher** : chaque sous-commande est relayée au
-binaire autonome correspondant, en héritant de sa sortie et de son code
-de retour.
+`alolipdf` est un seul **méga-binaire compilé**. Les outils Crystal ALOLI
+sont liés et appelés **en interne** via le `Cli.run(argv) : Int32` de
+chaque outil — aucun sous-processus, aucun binaire séparé à installer.
+`info` / `fonts` de poppler ne sont pas du code ALOLI : ils restent en
+shell-out (d'où *hybride*).
 
-[cols="1,3,3",options="header"]
+[cols="1,2,3,1",options="header"]
 |===
-| Sous-commande | Relaie vers | Rôle
+| Sous-commande | Porté par | Rôle | Mode
 
-| `combine`   | `crystal-combine-pdf` | fusionner / numéroter / compresser / chiffrer
-| `validate`  | `pdf-validate`        | conformité PDF/A-1b·2b·3b et PDF/UA
-| `sign`      | `pdf-sign sign`       | signer (PAdES B-B → B-LTA, TSA, LTV, PKCS#11)
-| `verify`    | `pdf-sign verify`     | vérifier les signatures d'un PDF
-| `watermark` | `watermark`           | apposer un filigrane
+| `combine`   | `CombinePDF::Cli`     | fusionner / numéroter / compresser / chiffrer | in-process
+| `validate`  | `PDF::Validate::CLI`  | conformité PDF/A-1b·2b·3b et PDF/UA           | in-process
+| `sign`      | `PDF::Signature::Cli` | signer (PAdES B-B → B-LTA, TSA, LTV, PKCS#11) | in-process
+| `verify`    | `PDF::Signature::Cli` | vérifier les signatures d'un PDF              | in-process
+| `watermark` | `Watermark::Cli`      | apposer un filigrane                          | in-process
+| `info`      | poppler `pdfinfo`     | métadonnées du document                       | shell-out
+| `fonts`     | poppler `pdffonts`    | liste des fontes                              | shell-out
 |===
 
 Plus les commandes intégrées `help [<outil>]`, `version` et `doctor`.
 
-Le choix du **shell-out** (plutôt que lier les shards ensemble) est
-délibéré : leurs versions de `pdf` sont incompatibles (combine-pdf en
-0.5.x, le validateur/signeur en 1.x), donc un binaire unique compilé
-n'est pas possible aujourd'hui. Cette façade apporte l'UX unifiée dès
-maintenant.
+Rendu possible par la mise à niveau de toute la suite sur `pdf` 1.x et
+l'exposition d'un `Cli.run` appelable par chaque outil — un seul `pdf`
+dans le graphe, donc compilation commune.
 
 == Installation
 
-Compiler, puis symlinker le binaire dans le `PATH` :
+Compiler une fois — tout l'ALOLI est embarqué :
 
 [source,shell]
 ----
@@ -42,15 +44,21 @@ shards build --release
 ln -s "$PWD/bin/alolipdf" ~/bin/alolipdf
 ----
 
-Chaque outil sous-jacent est résolu via `$ALOLIPDF_<OUTIL>` (chemin
-explicite) ou par son nom sur le `PATH`. `alolipdf doctor` affiche la
-couverture :
+Seuls les outils *externes* `info` / `fonts` nécessitent poppler
+(`brew install poppler`, `apt install poppler-utils`…), résolus via
+`$ALOLIPDF_INFO` / `$ALOLIPDF_FONTS` ou le `PATH`. `alolipdf doctor`
+affiche l'état :
 
 [source,console]
 ----
 $ alolipdf doctor
-  ✓ crystal-combine-pdf  →  /Users/vous/bin/crystal-combine-pdf
-  ✗ pdf-sign  (absent ; définir $ALOLIPDF_SIGN ou l'installer dans le PATH)
+  ✓ combine    compilé dans alolipdf (in-process)
+  ✓ validate   compilé dans alolipdf (in-process)
+  ✓ sign       compilé dans alolipdf (in-process)
+  ✓ verify     compilé dans alolipdf (in-process)
+  ✓ watermark  compilé dans alolipdf (in-process)
+  ✓ info       pdfinfo → /opt/homebrew/bin/pdfinfo
+  ✓ fonts      pdffonts → /opt/homebrew/bin/pdffonts
 ----
 
 == Démarrage rapide
@@ -72,9 +80,10 @@ d'environnement) traverse directement.
 
 == État
 
-Premier palier (0.1.0) : le dispatcher, `doctor` et `help`/`version` sont
-complets et testés. Un palier ultérieur pourra ajouter un installateur
-(tap Homebrew + `curl | sh`) — cf. `doc/INSTALLER.adoc`.
+0.3.0 : un seul méga-binaire compilé — les cinq outils ALOLI en interne,
+`info`/`fonts` de poppler en shell-out, `doctor`/`help`/`version`
+intégrés. Un palier ultérieur pourra ajouter un installateur (tap
+Homebrew + `curl | sh`) — cf. `doc/INSTALLER.adoc`.
 
 == Licence
 

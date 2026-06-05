@@ -1,5 +1,5 @@
 name: pdf-tools
-version: 0.3.0
+version: 0.4.0
 
 description: |
   Unified `alolipdf` command-line front-end for the ALOLI PDF tool

@@ -8,6 +8,16 @@ https://keepachangelog.com/1.1.0/[Keep a Changelog] et le
 versioning suit https://semver.org/[SemVer]
 (3 chiffres pour création, 4 pour portage de gem Ruby).
 
+== v0.4.0 — 2026-06-05 — Sous-commande `detach` (pdfdetach)
+
+=== Ajouté
+
+* **Sous-commande `detach`** → `pdfdetach` (lister et extraire les
+  fichiers embarqués d'un PDF : `--list`, `--save N`, `--save-all`).
+  Comme `info` et `fonts`, c'est un outil externe nommé d'après
+  poppler, donc il reste en shell-out, résolu via `$ALOLIPDF_DETACH`
+  puis le `PATH`.
+
 == v0.3.0 — 2026-06-05 — Méga-binaire compilé (outils ALOLI in-process)
 
 === Modifié

@@ -41,6 +41,8 @@ module AloliPdf
         nil, "pdfinfo", "ALOLIPDF_INFO"),
       Tool.new("fonts", "Lister les fontes d'un PDF (type, encodage, embarquée, subset)",
         nil, "pdffonts", "ALOLIPDF_FONTS"),
+      Tool.new("detach", "Lister et extraire les fichiers attachés d'un PDF (--list, --save)",
+        nil, "pdfdetach", "ALOLIPDF_DETACH"),
     ]
 
     # Runs the dispatcher against a full argv. Returns the exit code.

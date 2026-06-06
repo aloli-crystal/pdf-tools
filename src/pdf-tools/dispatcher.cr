@@ -52,7 +52,7 @@ module AloliPdf
       Tool.new("text", "Extraire le texte positionné d'un PDF (--json, --pages)",
         nil, "pdf2text", "ALOLIPDF_TEXT"),
       Tool.new("tohtml", "Convertir un PDF en HTML positionné",
-        nil, "pdftohtml", "ALOLIPDF_TOHTML"),
+        nil, "pdf2html", "ALOLIPDF_TOHTML"),
       Tool.new("toppm", "Rendre les pages d'un PDF en PNG/PPM (rasterizer natif)",
         nil, "pdftoppm", "ALOLIPDF_TOPPM"),
       Tool.new("tocairo", "Rendre les pages d'un PDF en PNG (rasterizer natif)",

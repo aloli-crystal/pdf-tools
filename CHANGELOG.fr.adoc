@@ -8,6 +8,17 @@ https://keepachangelog.com/1.1.0/[Keep a Changelog] et le
 versioning suit https://semver.org/[SemVer]
 (3 chiffres pour création, 4 pour portage de gem Ruby).
 
+== v0.9.1 — 2026-06-06 — Correctif : `tohtml` pointe vers `pdf2html` renommé
+
+=== Corrigé
+
+* **La sous-commande `tohtml` relaie désormais vers `pdf2html`**, plus
+  l'ancien nom de binaire `pdftohtml`. `aloli-crystal/pdf2text` v0.6.1 a
+  renommé son binaire HTML `pdftohtml` → `pdf2html` (pour éviter la
+  collision PATH avec le `pdftohtml` de poppler) ; `alolipdf tohtml`
+  résolvait encore l'ancien nom. Variable d'override inchangée
+  (`$ALOLIPDF_TOHTML`).
+
 == v0.9.0 — 2026-06-06 — Sous-commandes `toppm` et `tocairo` (rasterizer natif)
 
 === Ajouté

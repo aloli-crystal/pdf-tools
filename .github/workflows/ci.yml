@@ -38,7 +38,11 @@ jobs:
         run: crystal spec --error-on-warnings
 
       - name: Run ameba
-        run: ./bin/ameba
+        # On invoque le binaire depuis `lib/` plutôt que le binstub
+        # `./bin/ameba` : sur un cache hit du dossier `lib`, `shards
+        # install` saute le postinstall et ne recrée pas le binstub,
+        # alors que `lib/ameba/bin/ameba` est, lui, restauré par le cache.
+        run: lib/ameba/bin/ameba
 
   # Vérifie que la VERSION lue au compile-time est cohérente avec
   # shard.yml. La règle existe via le spec, mais on la double ici

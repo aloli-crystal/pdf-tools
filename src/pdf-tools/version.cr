@@ -2,7 +2,7 @@ module AloliPdf
   # Lue au compile-time depuis `shard.yml` via le macro `read_file`.
   # Évite la désynchronisation entre la constante Crystal et le
   # `version:` du shard.yml (cas vécu en mai 2026 avec
-  # crystal-combine-pdf : 7 versions inscrivaient la mauvaise valeur
+  # combine-pdf : 7 versions inscrivaient la mauvaise valeur
   # dans le `/Producer` des PDFs générés).
   #
   # Cf. note mémoire ALOLI `feedback_shard_version_macro.md`.

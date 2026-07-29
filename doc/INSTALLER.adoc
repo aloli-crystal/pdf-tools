@@ -8,7 +8,7 @@
 [abstract]
 Document de référence pour décider comment empaqueter et
 distribuer les outils PDF construits dans l'écosystème
-`aloli-crystal/*` (`pdf`, `crystal-combine-pdf`, `pdf-signature`,
+`aloli-crystal/*` (`pdf`, `combine-pdf`, `pdf-signature`,
 `watermark`, `prism`, etc.). Capture les options techniques
 identifiées le 2026-05-10, leurs trade-offs, et la trajectoire
 recommandée pour ALOLI.
@@ -34,7 +34,7 @@ qui se ressemblent peu :
 | Rien à installer côté utilisateur — c'est du Git natif, déjà en
   place.
 
-| **Sysadmin / DPO** qui veut juste `crystal-combine-pdf` ou
+| **Sysadmin / DPO** qui veut juste `combine-pdf` ou
   `watermark` en CLI
 | Un binaire dans `/usr/local/bin`, sans toucher à Crystal
 | Homebrew tap, FreeBSD pkg, apt repo, ou script `curl ↦ sh`.
@@ -88,7 +88,7 @@ désinstallation propre.
 brew tap aloli-crystal/tools
 brew install aloli-pdf            # méta-formule qui tire tout
 # ou granulaire :
-brew install crystal-combine-pdf
+brew install combine-pdf
 brew install watermark
 ----
 
@@ -99,8 +99,8 @@ Ruby par outil :
 ----
 class CrystalCombinePdf < Formula
   desc "PDF assembly, compression, encryption — Crystal native"
-  homepage "https://github.com/aloli-crystal/crystal-combine-pdf"
-  url "https://github.com/aloli-crystal/crystal-combine-pdf/archive/v1.0.31.37.tar.gz"
+  homepage "https://github.com/aloli-crystal/combine-pdf"
+  url "https://github.com/aloli-crystal/combine-pdf/archive/v1.0.31.37.tar.gz"
   sha256 "..."
   license "MIT"
 
@@ -111,12 +111,12 @@ class CrystalCombinePdf < Formula
   def install
     system "shards", "install"
     system "shards", "build", "--release"
-    bin.install "bin/crystal-combine-pdf"
+    bin.install "bin/combine-pdf"
   end
 
   test do
     assert_match version.to_s,
-                 shell_output("#{bin}/crystal-combine-pdf --version")
+                 shell_output("#{bin}/combine-pdf --version")
   end
 end
 ----
@@ -139,7 +139,7 @@ Un shard qui ne fait rien de cryptographique mais **agrège** :
 name: pdf-tools
 dependencies:
   pdf:                  { github: aloli-crystal/pdf }
-  crystal-combine-pdf:  { github: aloli-crystal/crystal-combine-pdf }
+  combine-pdf:  { github: aloli-crystal/combine-pdf }
   pdf-signature:        { github: aloli-crystal/pdf-signature }
   watermark:            { github: aloli-crystal/watermark }
   ghostscript:          { github: aloli-crystal/ghostscript }
@@ -151,12 +151,12 @@ Le binaire `alolipdf` est un dispatcher single-binary :
 
 [source,shell]
 ----
-alolipdf merge a.pdf b.pdf -o out.pdf      # → crystal-combine-pdf merge
-alolipdf compress doc.pdf -L                # → crystal-combine-pdf compress -L
-alolipdf encrypt rapport.pdf -u secret      # → crystal-combine-pdf encrypt
+alolipdf merge a.pdf b.pdf -o out.pdf      # → combine-pdf merge
+alolipdf compress doc.pdf -L                # → combine-pdf compress -L
+alolipdf encrypt rapport.pdf -u secret      # → combine-pdf encrypt
 alolipdf sign rapport.pdf --p12 …           # → pdf-signature
 alolipdf watermark doc.pdf "DRAFT"          # → watermark
-alolipdf decrypt doc.pdf …                  # → crystal-combine-pdf decrypt
+alolipdf decrypt doc.pdf …                  # → combine-pdf decrypt
 alolipdf help <sub>                         # convention ALOLI
 ----
 
@@ -247,7 +247,7 @@ publish vers ghcr.io).
   de release.
 
 | **Release multi-shard** : bumper `pdf` v0.5.5 nécessite de
-  bumper aussi `pdf-signature`, `crystal-combine-pdf`, etc.
+  bumper aussi `pdf-signature`, `combine-pdf`, etc.
 | Convention ALOLI actuelle : bump indépendant à chaque feature,
   sans `release-train`. À conserver — sinon on perd la
   granularité du tag-par-commit.
@@ -269,7 +269,7 @@ terme, préférence outils natifs), trois phases successives :
 === Phase 1 — Homebrew tap + script curl (~3 jours)
 
 . Créer `aloli-crystal/homebrew-tap` avec 4 formules
-  (`crystal-combine-pdf`, `watermark`, `prism` cask, `alolipdf`
+  (`combine-pdf`, `watermark`, `prism` cask, `alolipdf`
   méta).
 . Créer `aloli-crystal/pdf-tools` (méta-shard option C) qui
   produit un binaire `alolipdf` unique.
@@ -357,7 +357,7 @@ Effort total estimé : 3-4 jours focalisés.
 
 Discussion datée 2026-05-10 entre Philippe Nénert et Claude. Le
 document a été demandé dans la foulée de la livraison du
-flag `--linearize` (`crystal-combine-pdf` v1.0.31.37). À reprendre
+flag `--linearize` (`combine-pdf` v1.0.31.37). À reprendre
 quand Philippe aura répondu aux 5 questions ci-dessus, ou quand
 un cas d'usage concret rendra l'installateur prioritaire (ex. un
 client ISO 27001 qui demande à signer ses rapports d'audit avec

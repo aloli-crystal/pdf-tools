@@ -1,10 +1,10 @@
 name: pdf-tools
-version: 0.9.1
+version: 0.9.2
 
 description: |
   Unified `alolipdf` command-line front-end for the ALOLI PDF tool
   suite — a single compiled megabinary. The ALOLI Crystal tools
-  (crystal-combine-pdf, pdf-validate, pdf-signature, watermark) are
+  (combine-pdf, pdf-validate, pdf-signature, watermark) are
   linked in and invoked in-process via each tool's `Cli.run`; poppler's
   `pdfinfo` / `pdffonts` stay shell-outs. One discoverable entry point
   over the whole suite.
@@ -20,9 +20,9 @@ license: MIT
 # compiled together. Each is required by its `src/` path (shard name ≠
 # entry file for some) and called in-process — see src/pdf-tools.cr.
 dependencies:
-  crystal-combine-pdf:
-    github: aloli-crystal/crystal-combine-pdf
-    version: "~> 1.0.31.40"
+  combine-pdf:
+    github: aloli-crystal/combine-pdf
+    version: "~> 1.0.31.46"
   pdf-validate:
     github: aloli-crystal/pdf-validate
     version: "~> 0.47"

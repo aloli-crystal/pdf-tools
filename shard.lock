@@ -4,13 +4,13 @@ shards:
     git: https://github.com/crystal-ameba/ameba.git
     version: 1.6.4
 
-  crystal-combine-pdf:
-    git: https://github.com/aloli-crystal/crystal-combine-pdf.git
-    version: 1.0.31.40
+  combine-pdf:
+    git: https://github.com/aloli-crystal/combine-pdf.git
+    version: 1.0.31.46
 
   ghostscript:
     git: https://github.com/aloli-crystal/ghostscript.git
-    version: 0.1.1
+    version: 0.2.0
 
   matrix:
     git: https://github.com/exilor/matrix.git
@@ -18,7 +18,7 @@ shards:
 
   pdf:
     git: https://github.com/aloli-crystal/pdf.git
-    version: 1.6.0
+    version: 1.20.2
 
   pdf-signature:
     git: https://github.com/aloli-crystal/pdf-signature.git
@@ -42,5 +42,5 @@ shards:
 
   watermark:
     git: https://github.com/aloli-crystal/watermark.git
-    version: 0.1.6
+    version: 0.1.7
 

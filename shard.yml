@@ -1,5 +1,5 @@
 name: pdf-tools
-version: 0.9.2
+version: 0.9.3
 
 description: |
   Unified `alolipdf` command-line front-end for the ALOLI PDF tool
@@ -36,7 +36,7 @@ dependencies:
 development_dependencies:
   ameba:
     github: crystal-ameba/ameba
-    version: "~> 1.6"
+    version: "~> 1.7"
 
 targets:
   alolipdf:

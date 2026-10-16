@@ -8,6 +8,12 @@ https://keepachangelog.com/1.1.0/[Keep a Changelog] et le
 versioning suit https://semver.org/[SemVer]
 (3 chiffres pour création, 4 pour portage de gem Ruby).
 
+== v0.9.3 — 2026-10-16
+
+=== Changed
+
+* ameba 1.7 et Crystal 1.22.0 en CI ; nouvelles règles appliquées, aucun changement de comportement.
+
 == v0.9.2 — 2026-07-28 — Renommage : dépendance `crystal-combine-pdf` → `combine-pdf`
 
 === Changed

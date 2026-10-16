@@ -11,13 +11,13 @@ end
 describe AloliPdf::Dispatcher do
   it "exposes the expected suite subcommands" do
     keys = AloliPdf::Dispatcher::TOOLS.map(&.key)
-    %w(combine validate sign verify watermark info fonts).each do |expected|
+    %w[combine validate sign verify watermark info fonts].each do |expected|
       keys.should contain(expected)
     end
   end
 
   it "compiles the ALOLI tools in-process (a runner, no external binary)" do
-    %w(combine validate sign verify watermark).each do |key|
+    %w[combine validate sign verify watermark].each do |key|
       tool(key).runner.should_not be_nil
       tool(key).binary.should be_nil
     end
